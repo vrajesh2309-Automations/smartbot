@@ -1,54 +1,38 @@
 (function() {
-    const botId = 'smart-bot-v8-final';
+    const botId = 'smart-bot-v9-pro';
     if(document.getElementById(botId)) document.getElementById(botId).remove();
-
-    // ૧. ડેશબોર્ડ સ્ટાઇલ - Pointer Events Fix
-    const style = document.createElement('style');
-    style.innerHTML = `
-        #${botId} { pointer-events: auto !important; z-index: 2147483647 !important; display: block !important; }
-        #smartInput { background: #ffffff !important; color: #000 !important; cursor: text !important; }
-    `;
-    document.head.appendChild(style);
 
     const div = document.createElement('div');
     div.id = botId;
-    div.style.cssText = 'position:fixed; top:20px; right:20px; width:380px; background:#fff; border-radius:15px; padding:20px; box-shadow:0 15px 50px rgba(0,0,0,0.5); border:3px solid #4f46e5; font-family:sans-serif;';
+    div.style.cssText = 'position:fixed; top:20px; right:20px; width:380px; background:#fff; border-radius:15px; padding:20px; box-shadow:0 15px 50px rgba(0,0,0,0.5); border:3px solid #4f46e5; z-index:2147483647; font-family:sans-serif;';
 
     div.innerHTML = `
-        <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-            <b style="color:#4f46e5;">🚀 Gujarat Smart Bot V8</b>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <b style="color:#4f46e5;">🚀 Gujarat Smart Bot V9 (Dropdown Fix)</b>
             <button onclick="this.parentElement.parentElement.remove()" style="background:red; color:white; border:none; border-radius:6px; cursor:pointer; padding:2px 10px;">X</button>
         </div>
-        <textarea id="smartInput" placeholder="અહીં એક્સલ ડેટા પેસ્ટ કરો..." style="width:100%; height:130px; border:1px solid #cbd5e1; border-radius:8px; padding:10px; font-size:13px; margin-bottom:10px;"></textarea>
-        <div style="display:flex; gap:8px;">
-            <button id="btnPaste" style="flex:1; background:#6366f1; color:white; border:none; padding:10px; border-radius:6px; font-weight:bold; cursor:pointer;">📋 Paste</button>
-            <button id="btnStart" style="flex:2; background:#10b981; color:white; border:none; padding:10px; border-radius:6px; font-weight:bold; cursor:pointer;">🎯 START AUTO FILL</button>
-        </div>
+        <textarea id="smartInput" placeholder="એક્સલ ડેટા પેસ્ટ કરો (ID અને પછી ક્રમમાં માર્ક્સ)..." style="width:100%; height:130px; border:1px solid #cbd5e1; border-radius:8px; padding:10px; font-size:13px; margin-bottom:10px;"></textarea>
+        <button id="btnStart" style="width:100%; background:#10b981; color:white; border:none; padding:12px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:16px;">🎯 START AUTO FILL</button>
+        <p style="text-align:center; font-size:10px; color:#94a3b8; margin-top:10px;">PM Shri Chandana School - Smart Tool</p>
     `;
     document.body.appendChild(div);
 
-    // ૨. પાવરફુલ પેસ્ટ લોજીક
-    document.getElementById('btnPaste').onclick = async function() {
-        try {
-            const text = await navigator.clipboard.readText();
-            document.getElementById('smartInput').value = text;
-        } catch (err) {
-            let manual = prompt("કૃપા કરીને અહીં ડેટા Paste કરો:");
-            if(manual) document.getElementById('smartInput').value = manual;
-        }
-    };
+    // React/MUI Dropdown ફિલિંગ ફંક્શન
+    async function fillDropdown(element, value) {
+        element.focus();
+        element.click(); // ડ્રોપડાઉન ખોલવા માટે
+        await new Promise(r => setTimeout(r, 200));
 
-    // ૩. React-Proof ફિલિંગ ફંક્શન
-    function forceUpdateReact(input, val) {
-        input.focus();
+        // જો તે ઇનપુટ હોય તો વેલ્યુ સેટ કરો
         let setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
-        setter.call(input, val);
-        input.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
-        input.dispatchEvent(new Event('change', { bubbles: true, composed: true }));
-        input.dispatchEvent(new Event('blur', { bubbles: true, composed: true }));
+        setter.call(element, value);
+        
+        element.dispatchEvent(new Event('input', { bubbles: true }));
+        element.dispatchEvent(new Event('change', { bubbles: true }));
+        element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+        element.blur();
     }
 
-    // ૪. રન લોજીક
     document.getElementById('btnStart').onclick = async function() {
         const val = document.getElementById('smartInput').value.trim();
         if(!val) return alert("ડેટા પેસ્ટ કરો!");
@@ -61,45 +45,36 @@
             const key = cols[0].trim().toLowerCase();
             const marks = cols.slice(1).map(m => m.trim());
 
-            // હાજરી પૂરવી (Present Selection)
-            let present = Array.from(document.querySelectorAll('label')).find(l => l.innerText.includes('Present')) || document.querySelector('input[value="Present"]');
-            if(present) present.click();
+            // ૧. હાજરી (Present) ઓટો ક્લિક
+            let presentBtn = Array.from(document.querySelectorAll('input[type="radio"], .MuiRadio-root')).find(el => el.parentElement.innerText.includes('Present') || el.value === 'Present');
+            if(presentBtn) presentBtn.click();
 
-            // વિદ્યાર્થી શોધવો
-            let target = Array.from(document.querySelectorAll('td, span, div, p')).find(el => el.children.length === 0 && el.textContent.toLowerCase().includes(key));
-            
-            if(target) {
-                let rowContainer = target.parentElement;
-                let inputs = [];
-                for(let i=0; i<25; i++) {
-                    if(!rowContainer) break;
-                    inputs = Array.from(rowContainer.querySelectorAll('input:not([disabled])')).filter(inp => inp.type !== 'radio');
-                    if(inputs.length >= marks.length) break;
-                    rowContainer = rowContainer.parentElement;
-                }
+            // ૨. વિદ્યાર્થીના ઇનપુટ/ડ્રોપડાઉન શોધવા
+            // સ્ક્રીનશોટ મુજબ "Select Score" ધરાવતા તમામ ઇનપુટ્સ શોધો
+            let dropdowns = Array.from(document.querySelectorAll('input, [role="combobox"], [role="button"]'))
+                                .filter(el => el.innerText?.includes('Select Score') || el.placeholder?.includes('Select Score') || el.getAttribute('aria-label')?.includes('Select Score'));
 
-                // માર્ક્સ ભરવા
-                inputs.forEach((inp, idx) => {
-                    if(marks[idx] !== undefined && marks[idx] !== "") {
-                        forceUpdateReact(inp, marks[idx]);
-                        inp.style.background = "#d1fae5";
-                    }
-                });
-
-                // સેવિંગ માટે થોડો વિરામ (React ને ડેટા સમજવા માટે સમય આપવો)
-                await new Promise(r => setTimeout(r, 800));
-                
-                // સેવ બટન ક્લિક કરવું
-                let saveBtn = Array.from(document.querySelectorAll('button')).find(b => b.innerText.toLowerCase().includes('save'));
-                if(saveBtn) {
-                    saveBtn.scrollIntoView({ block: 'center' });
-                    saveBtn.click();
-                }
-                
-                await new Promise(r => setTimeout(r, 1500)); // આગામી રો માટે વિરામ
+            // જો ઉપરની રીતે ના મળે, તો બધા જ ઇનપુટ ફિલ્ડ્સ લો
+            if(dropdowns.length === 0) {
+                dropdowns = Array.from(document.querySelectorAll('input')).filter(i => !['radio', 'checkbox'].includes(i.type));
             }
+
+            // માર્ક્સ ભરવા
+            for (let idx = 0; idx < marks.length; idx++) {
+                if (dropdowns[idx] && marks[idx] !== "") {
+                    await fillDropdown(dropdowns[idx], marks[idx]);
+                    dropdowns[idx].style.background = "#d1fae5";
+                }
+            }
+
+            // ૩. સેવ બટન
+            await new Promise(r => setTimeout(r, 1000));
+            let saveBtn = Array.from(document.querySelectorAll('button')).find(b => b.innerText.toLowerCase().includes('save'));
+            if(saveBtn) saveBtn.click();
+
+            await new Promise(r => setTimeout(r, 2000)); // આગામી સ્ટુડન્ટ માટે સમય
         }
-        alert("🎉 બધી એન્ટ્રીઓ સફળતાપૂર્વક પૂર્ણ થઈ ગઈ છે!");
+        alert("🎉 સફળતાપૂર્વક પૂર્ણ!");
         this.disabled = false; this.innerText = "🎯 START AUTO FILL";
     };
 })();
